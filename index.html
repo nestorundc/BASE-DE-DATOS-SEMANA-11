@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Universitario - Supabase</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"Fira Code"', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 1); }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col md:flex-row overflow-hidden">
+
+    <!-- MOBILE HEADER -->
+    <header class="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex items-center justify-between z-30 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-indigo-600 rounded-xl text-white">
+                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </div>
+            <span class="font-bold text-lg text-white tracking-wide">UNDC</span>
+        </div>
+        <button id="mobile-menu-btn" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+    </header>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 z-40 w-64 bg-slate-900/95 md:bg-slate-900/60 backdrop-blur-xl border-r border-slate-800/80 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shrink-0">
+        <!-- Logo Header -->
+        <div class="p-6 hidden md:flex items-center space-x-3 border-b border-slate-800/80">
+            <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-xl text-white shadow-lg shadow-indigo-500/25">
+                <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg text-white leading-tight">UNDC Supabase</h1>
+                <p class="text-xs text-indigo-400 font-medium">Gestión Académica BD</p>
+            </div>
+        </div>
+
+        <!-- Navigation Links -->
+        <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Tablas del Diagrama</div>
+
+            <button onclick="switchTab('carrera')" id="nav-carrera" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="award" class="w-5 h-5"></i>
+                <span>CARRERA</span>
+                <span id="badge-carrera" class="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+            </button>
+
+            <button onclick="switchTab('docente')" id="nav-docente" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="user-check" class="w-5 h-5"></i>
+                <span>DOCENTE</span>
+                <span id="badge-docente" class="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+            </button>
+
+            <button onclick="switchTab('alumno')" id="nav-alumno" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span>ALUMNO</span>
+                <span id="badge-alumno" class="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+            </button>
+
+            <button onclick="switchTab('curso')" id="nav-curso" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+                <span>CURSO</span>
+                <span id="badge-curso" class="ml-auto text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0</span>
+            </button>
+
+            <button onclick="switchTab('matricula')" id="nav-matricula" class="nav-btn w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="file-check" class="w-5 h-5"></i>
+                <span>MATRICULA</span>
+                <span id="badge-matricula" class="ml-auto text-xs bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30 font-semibold">0</span>
+            </button>
+
+            <div class="pt-4 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Base de Datos</div>
+            <button onclick="showSqlModal()" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-medium text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all duration-200">
+                <i data-lucide="database" class="w-5 h-5 text-emerald-400"></i>
+                <span class="text-emerald-300">Script SQL Supabase</span>
+            </button>
+        </nav>
+
+        <!-- Footer Status Card -->
+        <div class="p-4 border-t border-slate-800/80 bg-slate-900/50">
+            <div class="glass-card rounded-xl p-3 text-xs flex items-center space-x-3">
+                <div class="relative flex h-3 w-3 shrink-0">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                </div>
+                <div class="truncate">
+                    <div class="font-semibold text-slate-200">BD: Supabase</div>
+                    <div class="text-[11px] text-slate-400 truncate">Conexión Activa</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- OVERLAY FOR MOBILE SIDEBAR -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+
+        <!-- TOP BAR -->
+        <header class="h-16 border-b border-slate-800/80 px-6 flex items-center justify-between bg-slate-900/40 backdrop-blur-md shrink-0">
+            <div class="flex items-center space-x-3">
+                <h2 id="page-title" class="text-xl font-bold text-white truncate uppercase tracking-wider">Gestión de Tablas</h2>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- Global Search Bar -->
+                <div class="relative hidden sm:block w-72">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="table-search" onkeyup="filterCurrentTable()" placeholder="Buscar en la tabla..." class="w-full pl-9 pr-4 py-1.5 bg-slate-800/60 border border-slate-700/60 rounded-xl text-xs text-slate-200 placeholder-slate-400 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+                </div>
+
+                <button onclick="fetchAllData().then(renderTabContent)" class="p-2 text-xs bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl transition-all flex items-center space-x-1 shrink-0" title="Sincronizar Datos">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Actualizar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- DYNAMIC CONTENT AREA -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8" id="main-content">
+            <!-- Content loaded via JavaScript -->
+        </div>
+    </main>
+
+    <!-- MODAL FORM (Crear / Editar) -->
+    <div id="modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="glass-card bg-slate-900/90 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-800">
+                <h3 id="modal-title" class="font-bold text-base text-white flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400"></i>
+                    <span>Nuevo Registro</span>
+                </h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="modal-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <div id="modal-fields" class="space-y-4">
+                    <!-- Dinámico por JavaScript -->
+                </div>
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors">Cancelar</button>
+                    <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition-all">Guardar en Supabase</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL SCRIPT SQL -->
+    <div id="sql-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="glass-card bg-slate-900/95 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <h3 class="font-bold text-base text-white flex items-center gap-2">
+                    <i data-lucide="code" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Script SQL para Supabase</span>
+                </h3>
+                <button onclick="closeSqlModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <pre class="bg-slate-950 p-4 rounded-xl text-xs font-mono text-emerald-400 overflow-x-auto border border-slate-800 max-h-96">
+CREATE TABLE "CARRERA" (
+    "ID_Carrera" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    "Nombre_Carrera" VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE "ALUMNO" (
+    "ID_Alumno" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    "Nombre" VARCHAR(100) NOT NULL,
+    "DNI" VARCHAR(15) UNIQUE NOT NULL,
+    "ID_Carrera" BIGINT NOT NULL REFERENCES "CARRERA"("ID_Carrera") ON DELETE CASCADE
+);
+
+CREATE TABLE "DOCENTE" (
+    "ID_Docente" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    "Nombre_Docente" VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE "CURSO" (
+    "ID_Curso" BIGINT GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY,
+    "Nombre_Curso" VARCHAR(100) NOT NULL,
+    "ID_Docente" BIGINT NOT NULL REFERENCES "DOCENTE"("ID_Docente") ON DELETE CASCADE
+);
+
+CREATE TABLE "MATRICULA" (
+    "ID_Alumno" BIGINT NOT NULL REFERENCES "ALUMNO"("ID_Alumno") ON DELETE CASCADE,
+    "ID_Curso" BIGINT NOT NULL REFERENCES "CURSO"("ID_Curso") ON DELETE CASCADE,
+    "Nota" NUMERIC(4,2),
+    PRIMARY KEY ("ID_Alumno", "ID_Curso")
+);</pre>
+            <div class="flex justify-end">
+                <button onclick="closeSqlModal()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT DE LOGICA Y SUPABASE -->
+    <script>
+        // Configuración de credenciales Supabase
+        const SUPABASE_URL = 'https://dswunwvsvprwmzefiwkt.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_mjNcEsiDP5j-JnqZTd2nxA_ptb84GJo';
+        
+        // Inicializar cliente oficial de Supabase
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentTab = 'carrera';
+        let localData = { carrera: [], docente: [], alumno: [], curso: [], matricula: [] };
+
+        // Mobile sidebar toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        if(mobileBtn) {
+            mobileBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+        }
+
+        // Cargar App al inicio
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            switchTab('carrera');
+        });
+
+        // Cambiar entre pestañas
+        async function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-indigo-400', 'bg-indigo-500/10', 'border', 'border-indigo-500/20');
+                btn.classList.add('text-slate-400');
+            });
+
+            const activeBtn = document.getElementById(`nav-${tab}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('text-slate-400');
+                activeBtn.classList.add('text-indigo-400', 'bg-indigo-500/10', 'border', 'border-indigo-500/20');
+            }
+
+            document.getElementById('page-title').innerText = `TABLA ${tab.toUpperCase()}`;
+            await fetchAllData();
+            renderTabContent();
+        }
+
+        // Obtener datos desde Supabase
+        async function fetchAllData() {
+            try {
+                const [c, d, a, cu, m] = await Promise.all([
+                    _supabase.from('CARRERA').select('*'),
+                    _supabase.from('DOCENTE').select('*'),
+                    _supabase.from('ALUMNO').select('*, CARRERA(Nombre_Carrera)'),
+                    _supabase.from('CURSO').select('*, DOCENTE(Nombre_Docente)'),
+                    _supabase.from('MATRICULA').select('*, ALUMNO(Nombre), CURSO(Nombre_Curso)')
+                ]);
+
+                localData.carrera = c.data || [];
+                localData.docente = d.data || [];
+                localData.alumno = a.data || [];
+                localData.curso = cu.data || [];
+                localData.matricula = m.data || [];
+
+                // Actualizar badges
+                document.getElementById('badge-carrera').innerText = localData.carrera.length;
+                document.getElementById('badge-docente').innerText = localData.docente.length;
+                document.getElementById('badge-alumno').innerText = localData.alumno.length;
+                document.getElementById('badge-curso').innerText = localData.curso.length;
+                document.getElementById('badge-matricula').innerText = localData.matricula.length;
+
+            } catch (err) {
+                console.error("Error al conectar a Supabase:", err);
+            }
+        }
+
+        // Renderizar vistas dinámicas con diseño Tailwind
+        function renderTabContent() {
+            const container = document.getElementById('main-content');
+            
+            let html = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Tabla ${currentTab.toUpperCase()}</h3>
+                        <p class="text-xs text-slate-400">Administración de registros sincronizados en Supabase</p>
+                    </div>
+                    <button onclick="openModal()" class="inline-flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Nuevo Registro</span>
+                    </button>
+                </div>
+            `;
+
+            if (currentTab === 'carrera') {
+                html += renderTable(['ID_Carrera', 'Nombre_Carrera'], localData.carrera, 'ID_Carrera');
+            } else if (currentTab === 'docente') {
+                html += renderTable(['ID_Docente', 'Nombre_Docente'], localData.docente, 'ID_Docente');
+            } else if (currentTab === 'alumno') {
+                const rows = localData.alumno.map(item => ({
+                    ID_Alumno: item.ID_Alumno,
+                    Nombre: item.Nombre,
+                    DNI: item.DNI,
+                    Carrera: item.CARRERA ? item.CARRERA.Nombre_Carrera : item.ID_Carrera
+                }));
+                html += renderTable(['ID_Alumno', 'Nombre', 'DNI', 'Carrera'], rows, 'ID_Alumno');
+            } else if (currentTab === 'curso') {
+                const rows = localData.curso.map(item => ({
+                    ID_Curso: item.ID_Curso,
+                    Nombre_Curso: item.Nombre_Curso,
+                    Docente: item.DOCENTE ? item.DOCENTE.Nombre_Docente : item.ID_Docente
+                }));
+                html += renderTable(['ID_Curso', 'Nombre_Curso', 'Docente'], rows, 'ID_Curso');
+            } else if (currentTab === 'matricula') {
+                const rows = localData.matricula.map(item => ({
+                    Alumno: item.ALUMNO ? item.ALUMNO.Nombre : item.ID_Alumno,
+                    Curso: item.CURSO ? item.CURSO.Nombre_Curso : item.ID_Curso,
+                    Nota: item.Nota !== null ? item.Nota : 'Sin nota',
+                    _pk: `${item.ID_Alumno}-${item.ID_Curso}`
+                }));
+                html += renderTable(['Alumno', 'Curso', 'Nota'], rows, '_pk');
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function renderTable(headers, data, pkField) {
+            if (!data || data.length === 0) {
+                return `
+                    <div class="glass-card rounded-2xl p-12 text-center text-slate-500 border border-slate-800">
+                        <i data-lucide="inbox" class="w-10 h-10 mx-auto mb-2 text-slate-600"></i>
+                        <p class="text-sm">No hay registros disponibles en esta tabla.</p>
+                    </div>
+                `;
+            }
+
+            let ths = headers.map(h => `<th class="py-3.5 px-4">${h}</th>`).join('');
+            
+            let trs = data.map(row => {
+                let tds = headers.map(h => `<td class="py-3 px-4">${row[h] !== undefined ? row[h] : ''}</td>`).join('');
+                let deleteId = row[pkField];
+                return `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        ${tds}
+                        <td class="py-3 px-4 text-right">
+                            <button onclick="deleteRow('${deleteId}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Eliminar registro">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            return `
+                <div class="glass-card rounded-2xl border border-slate-800 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="data-table">
+                            <thead>
+                                <tr class="bg-slate-900/80 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                                    ${ths}
+                                    <th class="py-3.5 px-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/60 text-xs text-slate-300">
+                                ${trs}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Modal para insertar nuevo registro
+        function openModal() {
+            const fieldsContainer = document.getElementById('modal-fields');
+            document.getElementById('modal-title').querySelector('span').innerText = `Nuevo Registro en ${currentTab.toUpperCase()}`;
+            
+            let html = '';
+            if (currentTab === 'carrera') {
+                html = `<div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Carrera</label>
+                            <input type="text" name="Nombre_Carrera" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>`;
+            } else if (currentTab === 'docente') {
+                html = `<div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Docente</label>
+                            <input type="text" name="Nombre_Docente" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        </div>`;
+            } else if (currentTab === 'alumno') {
+                let options = localData.carrera.map(c => `<option value="${c.ID_Carrera}">${c.Nombre_Carrera}</option>`).join('');
+                html = `
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Completo</label>
+                        <input type="text" name="Nombre" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">DNI</label>
+                        <input type="text" name="DNI" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Carrera</label>
+                        <select name="ID_Carrera" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">${options}</select>
+                    </div>
+                `;
+            } else if (currentTab === 'curso') {
+                let options = localData.docente.map(d => `<option value="${d.ID_Docente}">${d.Nombre_Docente}</option>`).join('');
+                html = `
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Curso</label>
+                        <input type="text" name="Nombre_Curso" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Docente Asignado</label>
+                        <select name="ID_Docente" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">${options}</select>
+                    </div>
+                `;
+            } else if (currentTab === 'matricula') {
+                let optAlumnos = localData.alumno.map(a => `<option value="${a.ID_Alumno}">${a.Nombre}</option>`).join('');
+                let optCursos = localData.curso.map(c => `<option value="${c.ID_Curso}">${c.Nombre_Curso}</option>`).join('');
+                html = `
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Alumno</label>
+                        <select name="ID_Alumno" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optAlumnos}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Curso</label>
+                        <select name="ID_Curso" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optCursos}</select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Nota</label>
+                        <input type="number" step="0.1" name="Nota" required min="0" max="20" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                `;
+            }
+
+            fieldsContainer.innerHTML = html;
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function showSqlModal() {
+            document.getElementById('sql-modal').classList.remove('hidden');
+        }
+
+        function closeSqlModal() {
+            document.getElementById('sql-modal').classList.add('hidden');
+        }
+
+        // Guardar registro en Supabase
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const payload = {};
+            formData.forEach((value, key) => payload[key] = value);
+
+            const { data, error } = await _supabase
+                .from(currentTab.toUpperCase())
+                .insert([payload]);
+
+            if (error) {
+                alert('Error al insertar en Supabase: ' + error.message);
+            } else {
+                closeModal();
+                await switchTab(currentTab);
+            }
+        }
+
+        // Eliminar registro en Supabase
+        async function deleteRow(id) {
+            if (!confirm('¿Seguro que deseas eliminar este registro?')) return;
+
+            let error = null;
+
+            if (currentTab === 'matricula') {
+                const [idAlumno, idCurso] = id.split('-');
+                const res = await _supabase
+                    .from('MATRICULA')
+                    .delete()
+                    .eq('ID_Alumno', idAlumno)
+                    .eq('ID_Curso', idCurso);
+                error = res.error;
+            } else {
+                const pkName = currentTab === 'carrera' ? 'ID_Carrera' :
+                               currentTab === 'docente' ? 'ID_Docente' :
+                               currentTab === 'alumno' ? 'ID_Alumno' : 'ID_Curso';
+                
+                const res = await _supabase
+                    .from(currentTab.toUpperCase())
+                    .delete()
+                    .eq(pkName, id);
+                error = res.error;
+            }
+
+            if (error) {
+                alert('Error al eliminar en Supabase: ' + error.message);
+            } else {
+                await switchTab(currentTab);
+            }
+        }
+
+        // Filtro de búsqueda local en la tabla cargada
+        function filterCurrentTable() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#data-table tbody tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
