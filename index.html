@@ -168,6 +168,7 @@
                 </button>
             </div>
             <form id="modal-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editing-id" name="editing_id" value="">
                 <div id="modal-fields" class="space-y-4">
                     <!-- Dinámico por JavaScript -->
                 </div>
@@ -373,12 +374,15 @@ CREATE TABLE "MATRICULA" (
             
             let trs = data.map(row => {
                 let tds = headers.map(h => `<td class="py-3 px-4">${row[h] !== undefined ? row[h] : ''}</td>`).join('');
-                let deleteId = row[pkField];
+                let rowId = row[pkField];
                 return `
                     <tr class="hover:bg-slate-800/40 transition-colors">
                         ${tds}
-                        <td class="py-3 px-4 text-right">
-                            <button onclick="deleteRow('${deleteId}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Eliminar registro">
+                        <td class="py-3 px-4 text-right flex items-center justify-end gap-1">
+                            <button onclick="openModal('${rowId}')" class="text-indigo-400 hover:text-indigo-300 p-1.5 rounded-lg hover:bg-indigo-500/10 transition-colors" title="Editar registro">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="deleteRow('${rowId}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Eliminar registro">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </td>
@@ -405,32 +409,61 @@ CREATE TABLE "MATRICULA" (
             `;
         }
 
-        // Modal para insertar nuevo registro
-        function openModal() {
+        // Modal para insertar o editar registro
+        function openModal(id = null) {
             const fieldsContainer = document.getElementById('modal-fields');
-            document.getElementById('modal-title').querySelector('span').innerText = `Nuevo Registro en ${currentTab.toUpperCase()}`;
+            const editingInput = document.getElementById('editing-id');
+            editingInput.value = id || '';
+
+            const isEdit = Boolean(id);
+            document.getElementById('modal-title').querySelector('span').innerText = isEdit 
+                ? `Editar Registro en ${currentTab.toUpperCase()}`
+                : `Nuevo Registro en ${currentTab.toUpperCase()}`;
             
+            // Buscar datos para editar si aplica
+            let itemToEdit = null;
+            if (isEdit) {
+                if (currentTab === 'matricula') {
+                    const [idA, idC] = id.split('-');
+                    itemToEdit = localData.matricula.find(m => String(m.ID_Alumno) === idA && String(m.ID_Curso) === idC);
+                } else {
+                    const pkName = currentTab === 'carrera' ? 'ID_Carrera' :
+                                   currentTab === 'docente' ? 'ID_Docente' :
+                                   currentTab === 'alumno' ? 'ID_Alumno' : 'ID_Curso';
+                    itemToEdit = localData[currentTab].find(x => String(x[pkName]) === String(id));
+                }
+            }
+
             let html = '';
             if (currentTab === 'carrera') {
+                const valNombre = itemToEdit ? itemToEdit.Nombre_Carrera : '';
                 html = `<div>
                             <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Carrera</label>
-                            <input type="text" name="Nombre_Carrera" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <input type="text" name="Nombre_Carrera" value="${valNombre}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                         </div>`;
             } else if (currentTab === 'docente') {
+                const valNombre = itemToEdit ? itemToEdit.Nombre_Docente : '';
                 html = `<div>
                             <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Docente</label>
-                            <input type="text" name="Nombre_Docente" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                            <input type="text" name="Nombre_Docente" value="${valNombre}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                         </div>`;
             } else if (currentTab === 'alumno') {
-                let options = localData.carrera.map(c => `<option value="${c.ID_Carrera}">${c.Nombre_Carrera}</option>`).join('');
+                const valNombre = itemToEdit ? itemToEdit.Nombre : '';
+                const valDni = itemToEdit ? itemToEdit.DNI : '';
+                const valCarrera = itemToEdit ? itemToEdit.ID_Carrera : '';
+
+                let options = localData.carrera.map(c => `
+                    <option value="${c.ID_Carrera}" ${String(c.ID_Carrera) === String(valCarrera) ? 'selected' : ''}>${c.Nombre_Carrera}</option>
+                `).join('');
+
                 html = `
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Nombre Completo</label>
-                        <input type="text" name="Nombre" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                        <input type="text" name="Nombre" value="${valNombre}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">DNI</label>
-                        <input type="text" name="DNI" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                        <input type="text" name="DNI" value="${valDni}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Carrera</label>
@@ -438,11 +471,17 @@ CREATE TABLE "MATRICULA" (
                     </div>
                 `;
             } else if (currentTab === 'curso') {
-                let options = localData.docente.map(d => `<option value="${d.ID_Docente}">${d.Nombre_Docente}</option>`).join('');
+                const valNombre = itemToEdit ? itemToEdit.Nombre_Curso : '';
+                const valDocente = itemToEdit ? itemToEdit.ID_Docente : '';
+
+                let options = localData.docente.map(d => `
+                    <option value="${d.ID_Docente}" ${String(d.ID_Docente) === String(valDocente) ? 'selected' : ''}>${d.Nombre_Docente}</option>
+                `).join('');
+
                 html = `
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Nombre del Curso</label>
-                        <input type="text" name="Nombre_Curso" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
+                        <input type="text" name="Nombre_Curso" value="${valNombre}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Docente Asignado</label>
@@ -450,20 +489,29 @@ CREATE TABLE "MATRICULA" (
                     </div>
                 `;
             } else if (currentTab === 'matricula') {
-                let optAlumnos = localData.alumno.map(a => `<option value="${a.ID_Alumno}">${a.Nombre}</option>`).join('');
-                let optCursos = localData.curso.map(c => `<option value="${c.ID_Curso}">${c.Nombre_Curso}</option>`).join('');
+                const valAlumno = itemToEdit ? itemToEdit.ID_Alumno : '';
+                const valCurso = itemToEdit ? itemToEdit.ID_Curso : '';
+                const valNota = itemToEdit && itemToEdit.Nota !== null ? itemToEdit.Nota : '';
+
+                let optAlumnos = localData.alumno.map(a => `
+                    <option value="${a.ID_Alumno}" ${String(a.ID_Alumno) === String(valAlumno) ? 'selected' : ''}>${a.Nombre}</option>
+                `).join('');
+                let optCursos = localData.curso.map(c => `
+                    <option value="${c.ID_Curso}" ${String(c.ID_Curso) === String(valCurso) ? 'selected' : ''}>${c.Nombre_Curso}</option>
+                `).join('');
+
                 html = `
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Alumno</label>
-                        <select name="ID_Alumno" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optAlumnos}</select>
+                        <select name="ID_Alumno" ${isEdit ? 'disabled' : ''} required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optAlumnos}</select>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Curso</label>
-                        <select name="ID_Curso" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optCursos}</select>
+                        <select name="ID_Curso" ${isEdit ? 'disabled' : ''} required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500 mb-3">${optCursos}</select>
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-400 mb-1">Nota</label>
-                        <input type="number" step="0.1" name="Nota" required min="0" max="20" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
+                        <input type="number" step="0.1" name="Nota" value="${valNota}" required min="0" max="20" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-indigo-500">
                     </div>
                 `;
             }
@@ -484,19 +532,49 @@ CREATE TABLE "MATRICULA" (
             document.getElementById('sql-modal').classList.add('hidden');
         }
 
-        // Guardar registro en Supabase
+        // Guardar o Editar registro en Supabase
         async function handleFormSubmit(e) {
             e.preventDefault();
             const formData = new FormData(e.target);
+            const editingId = formData.get('editing_id');
+            formData.delete('editing_id');
+
             const payload = {};
             formData.forEach((value, key) => payload[key] = value);
 
-            const { data, error } = await _supabase
-                .from(currentTab.toUpperCase())
-                .insert([payload]);
+            let error = null;
+
+            if (editingId) {
+                // MODO EDICIÓN (UPDATE)
+                if (currentTab === 'matricula') {
+                    const [idAlumno, idCurso] = editingId.split('-');
+                    const res = await _supabase
+                        .from('MATRICULA')
+                        .update({ Nota: payload.Nota })
+                        .eq('ID_Alumno', idAlumno)
+                        .eq('ID_Curso', idCurso);
+                    error = res.error;
+                } else {
+                    const pkName = currentTab === 'carrera' ? 'ID_Carrera' :
+                                   currentTab === 'docente' ? 'ID_Docente' :
+                                   currentTab === 'alumno' ? 'ID_Alumno' : 'ID_Curso';
+
+                    const res = await _supabase
+                        .from(currentTab.toUpperCase())
+                        .update(payload)
+                        .eq(pkName, editingId);
+                    error = res.error;
+                }
+            } else {
+                // MODO CREACIÓN (INSERT)
+                const res = await _supabase
+                    .from(currentTab.toUpperCase())
+                    .insert([payload]);
+                error = res.error;
+            }
 
             if (error) {
-                alert('Error al insertar en Supabase: ' + error.message);
+                alert('Error en Supabase: ' + error.message);
             } else {
                 closeModal();
                 await switchTab(currentTab);
